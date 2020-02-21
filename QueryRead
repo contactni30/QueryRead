@@ -1,0 +1,176 @@
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Scanner;
+import java.util.StringTokenizer;
+
+public class QueryRead {
+
+ public static void main(String args[]) throws IOException {
+  Scanner scan = new Scanner(System.in);
+  System.out.println("Enter Path : ");
+  String path = scan.nextLine();
+  ArrayList<String> listOfFiles = new ArrayList<String>();
+  if(path.contains(".txt")) {
+	  listOfFiles.add(path);
+  }else {
+	  File dir = new File(path);
+	  File[] directoryListing = dir.listFiles();
+	  if (directoryListing != null) {
+	    for (File child : directoryListing) {
+	      listOfFiles.add(child.getAbsolutePath());
+	    }
+	  }
+  }
+  /*File file = new File("D:\\test1.txt");
+  Scanner sc = new Scanner(file);*/
+  
+  System.out.println("List of tables are ... ");
+  int i = 0;
+  
+  for(String st:listOfFiles) {
+	  File file = new File(st);
+	  Scanner sc = new Scanner(file);
+	  
+  try (BufferedReader bf = new BufferedReader(new FileReader(file))) {
+   String query = "";
+   
+   String x = bf.readLine();
+   while(x!=null) {
+    if(x.startsWith("--")) {
+     //do nothing
+    }
+    else {
+    x= x.replace("(", " #9999# ");
+    x= x.replace(")", " #9999# ");
+    query = query+" "+x.trim();
+    }
+    x = bf.readLine();
+   }
+   
+   query = query.toUpperCase();
+   
+   HashSet<String> tables = new HashSet<String>();
+   
+    betweenFromAndWhere(query,tables);
+    if(query.contains("JOIN")) {
+     getJoinTable(query,tables);
+    }
+    getTableFromInsert(query,tables);
+	getTableFromUpdate(query,tables);
+   Iterator<String> iter = tables.iterator();
+   
+   while (iter.hasNext()) {
+    String temp = iter.next();
+    if(temp.contains("."))
+    {
+     temp = temp.substring(temp.indexOf(".")+1);
+    }
+    i = i + 1;
+    System.out.println(i + ". " + temp);
+   }
+  }
+  sc.close();
+  }
+  scan.close();
+  
+  
+ }
+ 
+	public static void getTableFromInsert(String query, HashSet<String> list) {
+		StringTokenizer tokenizer = new StringTokenizer(query," ");
+		while(tokenizer.hasMoreTokens()) {
+			String st = tokenizer.nextToken();
+			if(st.contains("INTO")) {
+				String temp = "";
+				while(tokenizer.hasMoreTokens()) {
+					String str = tokenizer.nextToken();
+					temp = temp + str;
+					if(temp.contains("#9999#")) {
+						temp = temp.substring(0,temp.indexOf("#9999#"));
+						list.add(temp.trim());
+						break;
+					}
+					
+				}
+			}
+		}
+	}
+	
+	public static void getTableFromUpdate(String query, HashSet<String> list) {
+		StringTokenizer tokenizer = new StringTokenizer(query," ");
+		while(tokenizer.hasMoreTokens()) {
+			String st = tokenizer.nextToken();
+			if(st.contains("UPDATE")) {
+				String temp = "";
+				while(tokenizer.hasMoreTokens()) {
+					String str = tokenizer.nextToken();
+					temp = temp + str;
+					if(temp.contains("SET")) {
+						temp = temp.substring(0,temp.indexOf("SET"));
+						list.add(temp.trim());
+						break;
+					}
+					
+				}
+			}
+		}
+	}
+ 
+ public static void getJoinTable(String query, HashSet list) {
+  StringTokenizer tokenizer = new StringTokenizer(query," ");
+  while(tokenizer.hasMoreTokens()) {
+   String st = tokenizer.nextToken();
+   if(st.contains("JOIN")) {
+    while(tokenizer.hasMoreTokens()) {
+     String str = tokenizer.nextToken();
+     list.add(str);
+     break;
+    }
+   }
+  }
+ }
+ 
+ public static void betweenFromAndWhere(String query, HashSet hash) {
+  StringTokenizer tokenizer = new StringTokenizer(query," ");
+  
+  while(tokenizer.hasMoreTokens()) {
+   String st = tokenizer.nextToken();
+   if(st.contains("FROM")) {
+    String res = "";  
+    while(tokenizer.hasMoreTokens()) {
+     String str1 = tokenizer.nextToken(); 
+     if(str1.contains("#9999#") || str1.contains("SELECT") || str1.contains("WHERE")) {
+      break;
+     }
+     res = res + " " + str1; 
+    }
+    
+    StringTokenizer tokenizer1 = new StringTokenizer(res,",");
+    while(tokenizer1.hasMoreTokens()) {
+     String str2 = tokenizer1.nextToken();
+     StringTokenizer tokenizer2 = new StringTokenizer(str2," ");
+     while(tokenizer2.hasMoreTokens()) {
+      
+      String str3 = tokenizer2.nextToken();
+      //if(str3.contains("(") || str3.contains("SELECT")) {
+      // break;
+      //}
+      hash.add(str3.toUpperCase());
+      break;
+     }
+    } 
+   }
+  }
+  
+  
+ }
+ 
+ 
+ 
+}
